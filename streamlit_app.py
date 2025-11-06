@@ -3,17 +3,18 @@ import pandas as pd
 import requests
 import plotly.express as px
 
+# --- 페이지 설정 ---
 st.set_page_config(page_title="🌤 서울 실시간 날씨 대시보드", page_icon="🌤", layout="wide")
-st.title("🌤 서울 실시간/최근 7일 날씨 대시보드")
-st.caption("Open-Meteo API(무료, 키 불필요) 기반 • Asia/Seoul")
+st.title("🌤 서울 최근 7일 실시간 날씨 대시보드")
+st.caption("데이터 출처: Open-Meteo API (실제 관측 데이터, 예측 제외)")
 
-# --- 파라미터 ---
-LAT, LON = 37.5665, 126.9780   # 서울 시청 근처
+# --- 위치 및 변수 설정 ---
+LAT, LON = 37.5665, 126.9780   # 서울 시청 좌표
 TIMEZONE = "Asia/Seoul"
 HOURLY_VARS = ["temperature_2m", "apparent_temperature", "relative_humidity_2m", "precipitation"]
 DAILY_VARS = ["temperature_2m_max", "temperature_2m_min", "precipitation_sum"]
 
-# --- 데이터 불러오기 (최근 7일 + 오늘, 시간별/일별) ---
+# --- 데이터 불러오기 함수 ---
 @st.cache_data(ttl=600)
 def fetch_weather():
     url = (
@@ -21,14 +22,14 @@ def fetch_weather():
         f"?latitude={LAT}&longitude={LON}"
         f"&hourly={','.join(HOURLY_VARS)}"
         f"&daily={','.join(DAILY_VARS)}"
-        f"&past_days=7"
+        f"&past_days=7&forecast_days=0"  # ✅ 예측 데이터 제외!
         f"&timezone={TIMEZONE}"
     )
     r = requests.get(url, timeout=20)
     r.raise_for_status()
     js = r.json()
 
-    # 시간별
+    # 시간별 데이터
     h = pd.DataFrame(js["hourly"])
     h["time"] = pd.to_datetime(h["time"])
     h = h.rename(columns={
@@ -38,7 +39,7 @@ def fetch_weather():
         "precipitation": "강수량(mm)"
     })
 
-    # 일별
+    # 일별 데이터
     d = pd.DataFrame(js["daily"])
     d["time"] = pd.to_datetime(d["time"])
     d = d.rename(columns={
@@ -48,22 +49,23 @@ def fetch_weather():
     })
     return h, d
 
+# --- 데이터 불러오기 ---
 try:
     hourly_df, daily_df = fetch_weather()
 except Exception as e:
     st.error(f"데이터 불러오기 실패: {e}")
     st.stop()
 
-# --- UI: 지표/해상도 선택 ---
+# --- 사용자 선택 UI ---
 left, right = st.columns([1.3, 1])
 with left:
-    metric = st.selectbox("📊 지표 선택(시간별)", ["기온(°C)", "체감온도(°C)", "습도(%)", "강수량(mm)"])
+    metric = st.selectbox("📊 지표 선택 (시간별)", ["기온(°C)", "체감온도(°C)", "습도(%)", "강수량(mm)"])
 with right:
-    gran = st.radio("⏱ 해상도", ["시간별", "일별"], horizontal=True)
+    gran = st.radio("⏱ 데이터 단위 선택", ["시간별", "일별"], horizontal=True)
 
-# --- 차트 & 요약 ---
+# --- 시각화 ---
 if gran == "시간별":
-    fig = px.line(hourly_df, x="time", y=metric, markers=True, title=f"[시간별] {metric} 최근 7일+오늘")
+    fig = px.line(hourly_df, x="time", y=metric, markers=True, title=f"[시간별] 최근 7일 {metric} 변화")
     st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("📈 요약 통계 (시간별)")
@@ -72,22 +74,21 @@ if gran == "시간별":
     col2.metric("최저", f"{hourly_df[metric].min():.1f}")
     col3.metric("평균", f"{hourly_df[metric].mean():.1f}")
 
-    with st.expander("🗂 원본(시간별)"):
+    with st.expander("🗂 원본 데이터 (시간별)"):
         st.dataframe(hourly_df, use_container_width=True)
 
 else:
-    # 일별은 기본적으로 최고/최저/강수량을 함께 보여줌
     d_long = daily_df.melt(id_vars=["time"], var_name="지표", value_name="값")
-    fig = px.line(d_long, x="time", y="값", color="지표", markers=True, title="[일별] 최고/최저/강수량")
+    fig = px.line(d_long, x="time", y="값", color="지표", markers=True, title="[일별] 최고/최저기온 및 강수량")
     st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("📈 요약 통계 (일별)")
     c1, c2, c3 = st.columns(3)
-    c1.metric("최고기온 평균", f"{daily_df['최고기온(°C)'].mean():.1f}")
-    c2.metric("최저기온 평균", f"{daily_df['최저기온(°C)'].mean():.1f}")
+    c1.metric("평균 최고기온", f"{daily_df['최고기온(°C)'].mean():.1f}")
+    c2.metric("평균 최저기온", f"{daily_df['최저기온(°C)'].mean():.1f}")
     c3.metric("총 강수량", f"{daily_df['일강수량(mm)'].sum():.1f}")
 
-    with st.expander("🗂 원본(일별)"):
+    with st.expander("🗂 원본 데이터 (일별)"):
         st.dataframe(daily_df, use_container_width=True)
 
-st.success("✅ 실제 API 데이터로 동작 중 (Open-Meteo)")
+st.success("✅ 실제 관측 데이터 기반 (미래 예보 제외)")
