@@ -8,7 +8,6 @@ st.set_page_config(page_title="🌤 서울 실시간 날씨 대시보드", page_
 st.title("🌤 서울 최근 7일 실시간 날씨 대시보드")
 st.caption("데이터 출처: Open-Meteo API (실제 관측 데이터, 예측 제외)")
 
-# --- 위치 및 변수 설정 ---
 LAT, LON = 37.5665, 126.9780   # 서울 시청 좌표
 TIMEZONE = "Asia/Seoul"
 HOURLY_VARS = ["temperature_2m", "apparent_temperature", "relative_humidity_2m", "precipitation"]
