@@ -1,93 +1,142 @@
 import streamlit as st
 import pandas as pd
-import requests
 import plotly.express as px
+import json
+from pathlib import Path
 
-# --- 페이지 설정 ---
-st.set_page_config(page_title="🌤 서울 실시간 날씨 대시보드", page_icon="🌤", layout="wide")
-st.title("🌤 서울 최근 7일 실시간 날씨 대시보드")
-st.caption("데이터 출처: Open-Meteo API (실제 관측 데이터, 예측 제외)")
 
-LAT, LON = 37.5665, 126.9780   # 서울 시청 좌표
-TIMEZONE = "Asia/Seoul"
-HOURLY_VARS = ["temperature_2m", "apparent_temperature", "relative_humidity_2m", "precipitation"]
-DAILY_VARS = ["temperature_2m_max", "temperature_2m_min", "precipitation_sum"]
+# -----------------------
+# 0. 기본 설정
+# -----------------------
+st.set_page_config(
+    page_title="서울·경기 화재 발생 현황 대시보드",
+    layout="wide"
+)
 
-# --- 데이터 불러오기 함수 ---
-@st.cache_data(ttl=600)
-def fetch_weather():
-    url = (
-        "https://api.open-meteo.com/v1/forecast"
-        f"?latitude={LAT}&longitude={LON}"
-        f"&hourly={','.join(HOURLY_VARS)}"
-        f"&daily={','.join(DAILY_VARS)}"
-        f"&past_days=7&forecast_days=0"  # ✅ 예측 데이터 제외!
-        f"&timezone={TIMEZONE}"
-    )
-    r = requests.get(url, timeout=20)
-    r.raise_for_status()
-    js = r.json()
+DATA_PATH = Path("소방청_화재발생 정보_20241231.csv")   # 🔹 네 CSV 파일 이름
+GEOJSON_PATH = Path("korea_sgg.json")                  # 🔹 GitHub에서 받은 시군구 GeoJSON
 
-    # 시간별 데이터
-    h = pd.DataFrame(js["hourly"])
-    h["time"] = pd.to_datetime(h["time"])
-    h = h.rename(columns={
-        "temperature_2m": "기온(°C)",
-        "apparent_temperature": "체감온도(°C)",
-        "relative_humidity_2m": "습도(%)",
-        "precipitation": "강수량(mm)"
-    })
 
-    # 일별 데이터
-    d = pd.DataFrame(js["daily"])
-    d["time"] = pd.to_datetime(d["time"])
-    d = d.rename(columns={
-        "temperature_2m_max": "최고기온(°C)",
-        "temperature_2m_min": "최저기온(°C)",
-        "precipitation_sum": "일강수량(mm)"
-    })
-    return h, d
+# -----------------------
+# 1. 데이터 로딩 함수
+# -----------------------
+@st.cache_data
+def load_fire_data(path: Path) -> pd.DataFrame:
+    # 한글 CSV → cp949 인코딩
+    df = pd.read_csv(path, encoding="cp949")
+    
+    # 서울 + 경기만 필터링
+    df = df[df["시도"].isin(["서울특별시", "경기도"])].copy()
+    
+    # 날짜/시간 컬럼 datetime으로 변환
+    df["화재발생년원일"] = pd.to_datetime(df["화재발생년원일"])
+    df["year"] = df["화재발생년원일"].dt.year
+    
+    return df
 
-# --- 데이터 불러오기 ---
-try:
-    hourly_df, daily_df = fetch_weather()
-except Exception as e:
-    st.error(f"데이터 불러오기 실패: {e}")
-    st.stop()
 
-# --- 사용자 선택 UI ---
-left, right = st.columns([1.3, 1])
-with left:
-    metric = st.selectbox("📊 지표 선택 (시간별)", ["기온(°C)", "체감온도(°C)", "습도(%)", "강수량(mm)"])
-with right:
-    gran = st.radio("⏱ 데이터 단위 선택", ["시간별", "일별"], horizontal=True)
+@st.cache_data
+def load_geojson(path: Path) -> dict:
+    with open(path, encoding="utf-8") as f:
+        geojson = json.load(f)
+    return geojson
 
-# --- 시각화 ---
-if gran == "시간별":
-    fig = px.line(hourly_df, x="time", y=metric, markers=True, title=f"[시간별] 최근 7일 {metric} 변화")
-    st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("📈 요약 통계 (시간별)")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("최고", f"{hourly_df[metric].max():.1f}")
-    col2.metric("최저", f"{hourly_df[metric].min():.1f}")
-    col3.metric("평균", f"{hourly_df[metric].mean():.1f}")
+# 실제 데이터 로딩
+df = load_fire_data(DATA_PATH)
+geojson = load_geojson(GEOJSON_PATH)
 
-    with st.expander("🗂 원본 데이터 (시간별)"):
-        st.dataframe(hourly_df, use_container_width=True)
 
-else:
-    d_long = daily_df.melt(id_vars=["time"], var_name="지표", value_name="값")
-    fig = px.line(d_long, x="time", y="값", color="지표", markers=True, title="[일별] 최고/최저기온 및 강수량")
-    st.plotly_chart(fig, use_container_width=True)
+# -----------------------
+# 2. 지도용 집계 데이터 / 연도별 집계 데이터 만들기
+# -----------------------
+# (1) 시군구별 화재 건수
+df_map = (
+    df.groupby("시군구")
+      .size()
+      .reset_index(name="화재건수")
+)
 
-    st.subheader("📈 요약 통계 (일별)")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("평균 최고기온", f"{daily_df['최고기온(°C)'].mean():.1f}")
-    c2.metric("평균 최저기온", f"{daily_df['최저기온(°C)'].mean():.1f}")
-    c3.metric("총 강수량", f"{daily_df['일강수량(mm)'].sum():.1f}")
+# (2) 연도별 화재 건수
+df_yearly = (
+    df.groupby("year")
+      .size()
+      .reset_index(name="화재건수")
+      .sort_values("year")
+)
 
-    with st.expander("🗂 원본 데이터 (일별)"):
-        st.dataframe(daily_df, use_container_width=True)
 
-st.success("✅ 실제 관측 데이터 기반 (미래 예보 제외)")
+# -----------------------
+# 3. KPI(요약 지표) 계산
+# -----------------------
+total_fires = int(df.shape[0])
+period_start = int(df["year"].min())
+period_end = int(df["year"].max())
+
+top_row = df_map.sort_values("화재건수", ascending=False).iloc[0]
+top_region = top_row["시군구"]
+top_region_count = int(top_row["화재건수"])
+
+
+# -----------------------
+# 4. 화면 상단 타이틀 + KPI 카드
+# -----------------------
+st.title("서울·경기 화재 발생 현황 대시보드 (Overview)")
+st.caption(f"{period_start}–{period_end}년 소방청 화재발생 정보(서울·경기)를 기반으로 제작한 개요 화면입니다.")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric("전체 화재 건수", f"{total_fires:,}건")
+
+with col2:
+    st.metric("분석 기간", f"{period_start}년 ~ {period_end}년")
+
+with col3:
+    st.metric("최다 발생 시·군·구", f"{top_region}", f"{top_region_count:,}건")
+
+
+# -----------------------
+# 5. 시군구별 화재 분포 지도(Choropleth)
+# -----------------------
+st.markdown("### 🗺️ 시군구별 화재 발생 분포 (서울·경기)")
+
+fig_map = px.choropleth(
+    df_map,
+    geojson=geojson,
+    locations="시군구",                     # 🔹 df_map의 기준 컬럼
+    featureidkey="properties.SIG_KOR_NM",   # 🔹 GeoJSON 안에서 시군구 이름이 들어있는 컬럼 경로
+    color="화재건수",
+    color_continuous_scale="Reds",
+    labels={"화재건수": "화재 건수"},
+)
+
+# 지도 레이아웃 정리
+fig_map.update_geos(fitbounds="locations", visible=False)
+fig_map.update_layout(
+    margin=dict(r=0, l=0, b=0, t=30),
+    coloraxis_colorbar=dict(title="건수")
+)
+
+st.plotly_chart(fig_map, use_container_width=True)
+
+
+# -----------------------
+# 6. 연도별 화재 발생 추세 그래프
+# -----------------------
+st.markdown("### 📈 연도별 화재 발생 추세 (서울·경기)")
+
+fig_line = px.line(
+    df_yearly,
+    x="year",
+    y="화재건수",
+    markers=True,
+    labels={"year": "연도", "화재건수": "화재 건수"},
+)
+
+fig_line.update_layout(
+    xaxis=dict(dtick=1),
+    margin=dict(r=0, l=0, b=0, t=30)
+)
+
+st.plotly_chart(fig_line, use_container_width=True)
