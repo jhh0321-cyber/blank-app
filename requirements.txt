@@ -1,6 +1,6 @@
 streamlit
-pandas 
-numpy 
-scikit-learn
+pandas
 plotly
-requests
+geopandas
+shapely
+pyproj
