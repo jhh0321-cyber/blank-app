@@ -299,15 +299,117 @@ with tab2:
             )
 
 # 탭 3 : 화재 원인
-
 with tab3:
     st.subheader("화재 원인 분석")
 
-    st.markdown("### 🔥 원인별 화재 비중")
-    st.info(
-        "여기에는 화재 원인(예: 전기, 부주의, 방화, 기계적 요인 등)을 기준으로 "
-        "파이차트 / bar 차트 등을 넣어서 시각화할 예정이야."
+    # 원인 분석용 데이터 준비 (전국 기준)
+    cause_col = "발화요인대분류"
+    df_cause = df_raw.copy()
+    df_cause[cause_col] = df_cause[cause_col].fillna("기타/미상")
+
+    # 전국 원인별 발생 건수 집계
+    cause_counts = (
+        df_cause
+        .groupby(cause_col, as_index=False)
+        .size()
+        .rename(columns={"size": "화재건수"})
+        .sort_values("화재건수", ascending=False)
     )
 
+    
+    # 1) 원인별 화재 비중 (도넛 차트)
+
+    st.markdown("### 🔥 원인별 화재 비중")
+
+    st.info(
+        "전국에서 발생한 화재를 발화 요인(부주의, 전기적 요인, 기계적 요인, 방화의심, 기타 등) "
+        "기준으로 집계한 결과입니다. 전체 화재 중 어떤 요인이 가장 큰 비중을 차지하는지 한눈에 볼 수 있습니다."
+    )
+
+    if cause_counts.empty:
+        st.warning("원인별 집계 데이터가 없습니다.")
+    else:
+        fig_cause = px.pie(
+            cause_counts,
+            names=cause_col,
+            values="화재건수",
+            hole=0.5,  # 도넛 형태
+            title="전국 화재 원인별 비중"
+        )
+
+        fig_cause.update_traces(
+            textposition="inside",
+            textinfo="percent+label"
+        )
+        fig_cause.update_layout(
+            legend_title_text="발화 요인(대분류)",
+            margin=dict(l=0, r=0, t=40, b=0)
+        )
+
+        st.plotly_chart(fig_cause, use_container_width=True)
+
+
+    # 2) 지역별 주요 원인 비교 (스택 가로 바)
+  
     st.markdown("### 📊 지역별 주요 원인 비교")
-    st.info("시도별로 어떤 원인이 더 많이 발생하는지 비교하는 그래프도 추가할 수 있어.")
+
+    st.info(
+        "전국에서 화재가 많이 발생한 상위 10개 시도를 대상으로, 주요 발화 요인(상위 5개)이 "
+        "각 지역에서 어느 정도 비중을 차지하는지 비교한 그래프입니다. "
+        "지역별로 어떤 원인이 상대적으로 더 많이 발생하는지 파악할 수 있습니다."
+    )
+
+    # 시도  원인별 건수 집계
+    region_cause = (
+        df_cause
+        .groupby(["시도", cause_col], as_index=False)
+        .size()
+        .rename(columns={"size": "화재건수"})
+    )
+
+    if region_cause.empty:
+        st.warning("지역별 원인 데이터가 없습니다.")
+    else:
+        # 시도별 전체 화재 건수
+        region_total = (
+            region_cause
+            .groupby("시도", as_index=False)["화재건수"]
+            .sum()
+            .sort_values("화재건수", ascending=False)
+        )
+
+        # 화재건수가 많은 상위 10개 시도 선택
+        top_regions = region_total.head(10)["시도"].tolist()
+        region_cause_top = region_cause[region_cause["시도"].isin(top_regions)].copy()
+
+        # 전국 기준 상위 5개 원인만 사용 (가독성)
+        top_causes = cause_counts.head(5)[cause_col].tolist()
+        region_cause_top = region_cause_top[region_cause_top[cause_col].isin(top_causes)]
+
+        # 시도 순서 정렬 (전체 건수 기준)
+        region_cause_top["시도"] = pd.Categorical(
+            region_cause_top["시도"],
+            categories=top_regions,
+            ordered=True
+        )
+
+        fig_region = px.bar(
+            region_cause_top,
+            x="화재건수",
+            y="시도",
+            color=cause_col,
+            orientation="h",      # 가로 막대
+            barmode="stack",
+            title="시도별 주요 화재 원인 분포 (상위 10개 시도, 상위 5개 원인)"
+        )
+
+        fig_region.update_layout(
+            xaxis_title="화재건수(건)",
+            yaxis_title="시도",
+            legend_title_text="발화 요인(대분류)",
+            margin=dict(l=0, r=0, t=40, b=0)
+        )
+
+        st.plotly_chart(fig_region, use_container_width=True)
+
+
