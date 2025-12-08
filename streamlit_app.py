@@ -2,19 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# ------------------------
-# 0. 페이지 기본 설정
-# ------------------------
 st.set_page_config(
     page_title="2024년 화재 대시보드",
     layout="wide"
 )
-
 st.title("2024년 시도별 화재 발생 현황")
 
-# ------------------------
 # 1. 데이터 로드 & 전처리
-# ------------------------
 @st.cache_data
 def load_data():
     # 엑셀 파일 읽기 (경로/이름은 상황에 맞게 수정)
@@ -111,14 +105,6 @@ with col_map:
         margin=dict(l=0, r=0, t=0, b=0),
         height=650,                      # 세로 크기: 살짝 큼
         width=650                        # 가로 크기: 거의 정사각형 느낌
-    )
-
-    # 마커 투명도/테두리 약간 조정(선택사항)
-    fig.update_traces(
-        marker=dict(
-            opacity=0.85,
-            line=dict(width=0.5, color="black")
-        )
     )
 
     # use_container_width=False 로 정사각형 비율 유지
