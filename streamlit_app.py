@@ -101,12 +101,3 @@ with col_map:
     )
 
     st.plotly_chart(fig, use_container_width=False)
-
-with col_right:
-    st.subheader("지도 해석 가이드")
-    st.write(
-        "- **노란 도로선 없는 한국어 지도(Vworld Gray)**를 사용했습니다.\n"
-        "- 동그라미의 **크기와 빨간색 농도**는 화재건수를 나타냅니다.\n"
-        "- 동그라미가 **크고 진할수록** 화재가 많이 발생한 지역입니다.\n"
-        "- 마우스를 올리면 **화재건수 / 인명피해 / 재산피해**를 확인할 수 있습니다."
-    )
