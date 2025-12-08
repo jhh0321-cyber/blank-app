@@ -297,17 +297,15 @@ with tab2:
             st.caption(
                 "하루 중 어느 시간대에 화재가 집중되는지 확인할 수 있습니다."
             )
-# 3️⃣ 탭 3 : 화재 원인 분석
-# =============================
+
+# 탭 3 : 화재 원인 분석
 with tab3:
     st.subheader("화재 원인 분석")
 
-    # 🔹 원인 분석용 데이터 준비 (전국 기준)
     cause_col = "발화요인대분류"
     df_cause = df_raw.copy()
     df_cause[cause_col] = df_cause[cause_col].fillna("기타/미상")
 
-    # 전국 원인별 발생 건수 집계
     cause_counts = (
         df_cause
         .groupby(cause_col, as_index=False)
@@ -316,19 +314,11 @@ with tab3:
         .sort_values("화재건수", ascending=False)
     )
 
-    # 좌/우 2분할 레이아웃
     col_left, col_right = st.columns(2)
 
-    # ======================================
-    # 🔥 왼쪽: 원인별 화재 비중 (도넛 차트)
-    # ======================================
+    # 원인별 화재 비중 (도넛)
     with col_left:
         st.markdown("### 🔥 원인별 화재 비중")
-
-        st.info(
-            "전국에서 발생한 화재를 발화 요인(부주의, 전기적 요인, 기계적 요인, 방화의심, 기타 등) "
-            "기준으로 집계한 결과입니다. 전체 화재 중 어떤 요인이 가장 큰 비중을 차지하는지 한눈에 볼 수 있습니다."
-        )
 
         if cause_counts.empty:
             st.warning("원인별 집계 데이터가 없습니다.")
@@ -337,7 +327,7 @@ with tab3:
                 cause_counts,
                 names=cause_col,
                 values="화재건수",
-                hole=0.5,  # 도넛 형태
+                hole=0.5,
                 title="전국 화재 원인별 비중"
             )
 
@@ -345,26 +335,25 @@ with tab3:
                 textposition="inside",
                 textinfo="percent+label"
             )
+
             fig_cause.update_layout(
                 legend_title_text="발화 요인(대분류)",
-                margin=dict(l=0, r=0, t=40, b=0)
+                margin=dict(l=0, r=0, t=50, b=0)
             )
 
             st.plotly_chart(fig_cause, use_container_width=True)
 
-    # ======================================
-    # 📊 오른쪽: 지역별 주요 원인 비교 (히트맵)
-    # ======================================
+        # 파란 info 박스
+        st.info(
+            "전국에서 발생한 화재를 발화 요인 기준으로 집계한 결과입니다. "
+            "어떤 원인이 가장 큰 비중을 차지하는지 한눈에 볼 수 있습니다."
+        )
+
+    
+    # 오른쪽: 지역별 주요 원인 비교 (히트맵)
     with col_right:
         st.markdown("### 📊 지역별 주요 원인 비교 (히트맵)")
 
-        st.info(
-            "전국에서 화재가 많이 발생한 상위 10개 시도를 대상으로, "
-            "주요 발화 요인(상위 5개)의 화재 건수를 히트맵으로 표현했습니다. "
-            "색이 진할수록 해당 지역에서 그 원인으로 인한 화재가 많이 발생했다는 뜻입니다."
-        )
-
-        # 시도 × 원인별 건수 집계
         region_cause = (
             df_cause
             .groupby(["시도", cause_col], as_index=False)
@@ -372,10 +361,9 @@ with tab3:
             .rename(columns={"size": "화재건수"})
         )
 
-        if region_cause.empty or cause_counts.empty:
+        if region_cause.empty:
             st.warning("지역별 원인 데이터가 없습니다.")
         else:
-            # 시도별 전체 화재 건수
             region_total = (
                 region_cause
                 .groupby("시도", as_index=False)["화재건수"]
@@ -383,26 +371,23 @@ with tab3:
                 .sort_values("화재건수", ascending=False)
             )
 
-            # 🔹 화재건수가 많은 상위 10개 시도 선택
             top_regions = region_total.head(10)["시도"].tolist()
-            region_cause_top = region_cause[region_cause["시도"].isin(top_regions)].copy()
+            region_cause_top = region_cause[region_cause["시도"].isin(top_regions)]
 
-            # 🔹 전국 기준 상위 5개 원인만 사용 (가독성)
             top_causes = cause_counts.head(5)[cause_col].tolist()
             region_cause_top = region_cause_top[region_cause_top[cause_col].isin(top_causes)]
 
-            # 피벗 테이블: 행=시도, 열=원인, 값=화재건수
             heat_df = (
                 region_cause_top
                 .pivot(index="시도", columns=cause_col, values="화재건수")
-                .reindex(index=top_regions)    # 시도 순서 정렬
-                [top_causes]                   # 원인 순서 정렬
+                .reindex(index=top_regions)
+                [top_causes]
                 .fillna(0)
             )
 
             fig_region = px.imshow(
                 heat_df,
-                text_auto=True,                 # 각 칸에 값 표시
+                text_auto=True,
                 aspect="auto",
                 color_continuous_scale="Reds",
                 labels=dict(
@@ -410,12 +395,20 @@ with tab3:
                     y="시도",
                     color="화재건수(건)"
                 ),
-                title="시도별 주요 화재 원인 히트맵\n(상위 10개 시도, 상위 5개 원인)"
+                title="시도별 주요 화재 원인 히트맵 (상위 10개 시도)"
             )
 
             fig_region.update_layout(
                 xaxis_side="top",
-                margin=dict(l=0, r=0, t=60, b=0)
+                xaxis_tickangle=0,
+                margin=dict(l=0, r=0, t=90, b=10)  # 제목과 x축 공간 확보
             )
 
+            st.plotly_chart(fig_region, use_container_width=True)
+
+        # 파란 info 박스 
+        st.info(
+            "상위 10개 시도를 대상으로 주요 발화 요인의 분포를 히트맵으로 나타냈습니다. "
+            "색이 진할수록 해당 지역에서 그 원인으로 인한 화재가 더 많이 발생한 것을 의미합니다."
+        )
             st.plotly_chart(fig_region, use_container_width=True)
