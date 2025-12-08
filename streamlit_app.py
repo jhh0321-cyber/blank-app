@@ -2,9 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# -----------------------------
 # 기본 설정 & 제목
-# -----------------------------
 st.set_page_config(page_title="2024년 화재 대시보드", layout="wide")
 
 st.markdown(
@@ -13,9 +11,7 @@ st.markdown(
 )
 st.write("")  # 여백
 
-# -----------------------------
-# 데이터 로드 함수
-# -----------------------------
+# 데이터 로드 
 @st.cache_data
 def load_data():
     df = pd.read_excel("2024_fire.xlsx")
@@ -49,7 +45,7 @@ def load_data():
         "재산피해소계": "재산피해"
     })
 
-    # 시도별 좌표 (17개)
+    # 시도별 좌표
     sido_coords = {
         "서울특별시": (37.5665, 126.9780),
         "부산광역시": (35.1796, 129.0756),
@@ -79,9 +75,7 @@ def load_data():
 # 데이터 불러오기
 df_raw, df_sido = load_data()
 
-# -----------------------------
 # 공통 사이드바 필터
-# -----------------------------
 st.sidebar.header("필터")
 sido_list = sorted(df_sido["시도"].unique().tolist())
 sido_options = ["전체"] + sido_list
@@ -104,7 +98,7 @@ else:
 
 red_scale = ["#ffb3b3", "#ff8080", "#ff4d4d", "#ff1a1a", "#e60000", "#b30000"]
 
-# -----------------------------
+
 # 탭(페이지) 구성
 # -----------------------------
 tab1, tab2, tab3 = st.tabs([
@@ -163,22 +157,47 @@ with tab1:
 
         st.plotly_chart(fig, use_container_width=False)
 
+    # 오른쪽 : 지표별 TOP 10 랭킹
+    # -----------------------------
     with col_right:
-        if selected_sido == "전체":
-            st.subheader("전국 요약")
-        else:
-            st.subheader(f"{selected_sido} 요약")
+        st.subheader("지역별 TOP 10")
 
-        total_fire = df_filtered.shape[0]
-        total_cas = df_filtered["인명피해(명)소계"].sum()
-        total_prop = df_filtered["재산피해소계"].sum()
+        # 지표 선택 (화재건수 / 인명피해 / 재산피해)
+        metric_option = st.radio(
+            "정렬 기준 지표 선택",
+            ("화재건수", "인명피해(명)소계", "재산피해"),
+            horizontal=True
+        )
 
-        st.metric("화재 건수", f"{total_fire:,}건")
-        st.metric("인명 피해", f"{total_cas:,}명")
-        st.metric("재산 피해", f"{total_prop:,}원")
+        metric_label = {
+            "화재건수": "화재 건수",
+            "인명피해(명)소계": "인명 피해",
+            "재산피해": "재산 피해"
+        }
 
-        st.markdown("---")
-        st.caption("지도와 요약 지표를 통해 지역별 화재 규모를 한눈에 파악할 수 있습니다.")
+        # df_sido 전체 기준으로 TOP 10 시도 추출
+        top10 = (
+            df_sido[["시도", "화재건수", "인명피해(명)소계", "재산피해"]]
+            .sort_values(metric_option, ascending=False)
+            .head(10)
+            .reset_index(drop=True)
+        )
+        top10.insert(0, "순위", top10.index + 1)
+
+        st.markdown(f"**{metric_label[metric_option]} 기준 상위 10개 시도**")
+        st.dataframe(
+            top10.style.format({
+                "화재건수": "{:,}",
+                "인명피해(명)소계": "{:,}",
+                "재산피해": "{:,}"
+            }),
+            use_container_width=True,
+            height=350
+        )
+
+        st.caption(
+            f"선택한 지표( {metric_label[metric_option]} )를 기준으로 시도별 상위 10개 지역을 정렬한 표입니다."
+        )
 
 # =============================
 # 2️⃣ 탭 2 : 월별 / 시간대별 (형식만 잡아둔 상태)
