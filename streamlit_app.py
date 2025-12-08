@@ -87,14 +87,14 @@ with col_map:
     fig.update_traces(marker={"opacity": 0.9})
 
     fig.update_layout(
-         mapbox={
+        mapbox={
             "style": "white-bg",
             "layers": [
                 {
                     "sourcetype": "raster",
                     "source": ["https://xdworld.vworld.kr/2d/Base/202002/{z}/{x}/{y}.png"],
                     "below": "traces",
-                    "opacity": 0.28
+                    "opacity": 0.6       
                 }
             ]
         },
