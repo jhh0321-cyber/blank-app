@@ -209,54 +209,101 @@ with col_right:
     )
 
 # 2️⃣ 탭 2 : 월별 / 시간대별 
+# 2️⃣ 탭 2 : 월별 / 시간대별
+# =============================
 with tab2:
     st.subheader("월별 / 시간대별 화재 발생 분석")
 
     col_month, col_hour = st.columns(2)
 
-    # 월별 추세
+    # -------------------------
+    # 📅 월별 추세 (왼쪽 50%)
+    # -------------------------
     with col_month:
         st.markdown("### 📅 월별 화재 발생 추세")
-        # 월 숫자 컬럼 생성 (1~12)
-    df_filtered["month_num"] = df_filtered["화재발생년원일"].dt.month
 
-    # 월별 화재건수 집계
-    monthly = (
-        df_filtered
-        .groupby("month_num", as_index=False)["화재발생년원일"]
-        .count()
-        .rename(columns={"화재발생년원일": "화재건수"})
-        .sort_values("month_num")
-    )
+        # 월 숫자 컬럼 (1~12)
+        df_filtered["month_num"] = df_filtered["화재발생년원일"].dt.month
 
-    if monthly.empty:
-        st.info("선택한 조건에 해당하는 월별 데이터가 없습니다.")
-    else:
-        fig_month = px.line(
-            monthly,
-            x="month_num",
-            y="화재건수",
-            markers=True,
-            title=f"{'전국' if selected_sido == '전체' else selected_sido} 월별 화재 발생 추세"
+        # 월별 화재건수 집계
+        monthly = (
+            df_filtered
+            .groupby("month_num", as_index=False)["화재발생년원일"]
+            .count()
+            .rename(columns={"화재발생년원일": "화재건수"})
+            .sort_values("month_num")
         )
 
-        fig_month.update_layout(
-            xaxis_title="월",
-            yaxis_title="화재건수(건)",
-            hovermode="x unified",
-            xaxis=dict(
-                tickmode="array",
-                tickvals=list(range(1, 13)),   # 1~12 딱 맞게 표시
-                ticktext=[str(i) for i in range(1, 12 + 1)]
+        if monthly.empty:
+            st.info("선택한 조건에 해당하는 월별 데이터가 없습니다.")
+        else:
+            fig_month = px.line(
+                monthly,
+                x="month_num",
+                y="화재건수",
+                markers=True,
+                title=f"{'전국' if selected_sido == '전체' else selected_sido} 월별 화재 발생 추세"
             )
+
+            fig_month.update_layout(
+                xaxis_title="월",
+                yaxis_title="화재건수(건)",
+                hovermode="x unified",
+                xaxis=dict(
+                    tickmode="array",
+                    tickvals=list(range(1, 13)),               # 1~12 월
+                    ticktext=[str(i) for i in range(1, 13)]
+                )
+            )
+
+            st.plotly_chart(fig_month, use_container_width=True)
+
+            st.caption(
+                "월별 화재 건수 변화를 통해 계절별·시기별 위험도의 변화를 확인할 수 있습니다."
+            )
+
+    # -------------------------
+    # ⏰ 시간대별 분포 (오른쪽 50%)
+    # -------------------------
+    with col_hour:
+        st.markdown("### ⏰ 시간대별 화재 발생 분포")
+
+        # 시간대 컬럼 (0~23시) - 이미 '시간' 컬럼이 있으면 그거 써도 됨
+        df_filtered["hour"] = df_filtered["화재발생년원일"].dt.hour
+
+        hourly = (
+            df_filtered
+            .groupby("hour", as_index=False)["화재발생년원일"]
+            .count()
+            .rename(columns={"화재발생년원일": "화재건수"})
+            .sort_values("hour")
         )
 
-        st.plotly_chart(fig_month, use_container_width=True)
+        if hourly.empty:
+            st.info("선택한 조건에 해당하는 시간대별 데이터가 없습니다.")
+        else:
+            fig_hour = px.bar(
+                hourly,
+                x="hour",
+                y="화재건수",
+                title=f"{'전국' if selected_sido == '전체' else selected_sido} 시간대별 화재 발생 분포"
+            )
 
-        st.caption(
-            "월별 화재 건수 변화를 나타낸 그래프입니다. "
-            "계절에 따라 화재 위험이 어떻게 달라지는지 확인할 수 있습니다."
-        )
+            fig_hour.update_layout(
+                xaxis_title="시간대(시)",
+                yaxis_title="화재건수(건)",
+                xaxis=dict(
+                    tickmode="array",
+                    tickvals=list(range(0, 24)),              # 0~23시
+                    ticktext=[str(i) for i in range(0, 24)]
+                )
+            )
+
+            st.plotly_chart(fig_hour, use_container_width=True)
+
+            st.caption(
+                "하루 중 어느 시간대에 화재가 집중되는지 확인할 수 있습니다."
+            )
 
         
 
