@@ -93,8 +93,7 @@ with col_map:
                 {
                     "sourcetype": "raster",
                     "source": ["https://xdworld.vworld.kr/2d/Base/202002/{z}/{x}/{y}.png"],
-                    "below": "traces",
-                    "opacity": 0.28
+                    "below": "traces"
                 }
             ]
         },
