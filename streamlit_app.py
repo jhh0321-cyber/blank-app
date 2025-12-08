@@ -87,7 +87,17 @@ with col_map:
     fig.update_traces(marker={"opacity": 0.9})
 
     fig.update_layout(
-         mapbox_style="carto-positron",
+         mapbox={
+            "style": "white-bg",
+            "layers": [
+                {
+                    "sourcetype": "raster",
+                    "source": ["https://xdworld.vworld.kr/2d/Base/202002/{z}/{x}/{y}.png"],
+                    "below": "traces",
+                    "opacity": 0.28
+                }
+            ]
+        },
         margin={"l": 0, "r": 0, "t": 0, "b": 0},
         height=750,
         width=750
