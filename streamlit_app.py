@@ -208,50 +208,57 @@ with col_right:
         f"선택한 지표({metric_label[metric_option]}) 기준으로 시도별 상위 10개 지역을 정렬한 표입니다."
     )
 
-# =============================
-# 2️⃣ 탭 2 : 월별 / 시간대별 (형식만 잡아둔 상태)
-# =============================
+# 2️⃣ 탭 2 : 월별 / 시간대별 
 with tab2:
     st.subheader("월별 / 시간대별 화재 발생 분석")
 
     col_month, col_hour = st.columns(2)
 
-    # 📅 월별 추세
+    # 월별 추세
     with col_month:
         st.markdown("### 📅 월별 화재 발생 추세")
+        # 월 숫자 컬럼 생성 (1~12)
+    df_filtered["month_num"] = df_filtered["화재발생년원일"].dt.month
 
-        # 월별 화재건수 집계 (현재 선택된 시도 기준: df_filtered 사용)
-        monthly = (
-            df_filtered
-            .groupby("월", as_index=False)["화재발생년원일"]
-            .count()
-            .rename(columns={"화재발생년원일": "화재건수"})
-            .sort_values("월")
+    # 월별 화재건수 집계
+    monthly = (
+        df_filtered
+        .groupby("month_num", as_index=False)["화재발생년원일"]
+        .count()
+        .rename(columns={"화재발생년원일": "화재건수"})
+        .sort_values("month_num")
+    )
+
+    if monthly.empty:
+        st.info("선택한 조건에 해당하는 월별 데이터가 없습니다.")
+    else:
+        fig_month = px.line(
+            monthly,
+            x="month_num",
+            y="화재건수",
+            markers=True,
+            title=f"{'전국' if selected_sido == '전체' else selected_sido} 월별 화재 발생 추세"
         )
 
-        # 데이터가 없을 경우 방어 코드
-        if monthly.empty:
-            st.info("선택한 조건에 해당하는 월별 데이터가 없습니다.")
-        else:
-            fig_month = px.line(
-                monthly,
-                x="월",
-                y="화재건수",
-                markers=True,
-                title=f"{'전국' if selected_sido == '전체' else selected_sido} 월별 화재 발생 추세"
+        fig_month.update_layout(
+            xaxis_title="월",
+            yaxis_title="화재건수(건)",
+            hovermode="x unified",
+            xaxis=dict(
+                tickmode="array",
+                tickvals=list(range(1, 13)),   # 1~12 딱 맞게 표시
+                ticktext=[str(i) for i in range(1, 12 + 1)]
             )
-            fig_month.update_layout(
-                xaxis_title="월",
-                yaxis_title="화재건수(건)",
-                hovermode="x unified"
-            )
+        )
 
-            st.plotly_chart(fig_month, use_container_width=True)
+        st.plotly_chart(fig_month, use_container_width=True)
 
-            st.caption(
-                "2024년 동안 월별로 발생한 화재 건수의 변화를 나타낸 그래프입니다. "
-                "계절·시기별로 화재가 증가하거나 감소하는 패턴을 확인할 수 있습니다."
-            )
+        st.caption(
+            "월별 화재 건수 변화를 나타낸 그래프입니다. "
+            "계절에 따라 화재 위험이 어떻게 달라지는지 확인할 수 있습니다."
+        )
+
+        
 
 # =============================
 # 3️⃣ 탭 3 : 화재 원인 (형식만 잡아둔 상태)
