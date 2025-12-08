@@ -62,7 +62,7 @@ red_scale = ["#ffb3b3", "#ff8080", "#ff4d4d", "#ff1a1a", "#e60000", "#b30000"]
 col_map, col_right = st.columns([2, 1])
 
 with col_map:
-    st.subheader("시도별 화재 발생 분포 (동그라미 크기 + 색상 = 화재건수)")
+    st.subheader("시도별 화재 발생 분포")
 
     fig = px.scatter_mapbox(
         df_sido,
@@ -87,16 +87,7 @@ with col_map:
     fig.update_traces(marker={"opacity": 0.9})
 
     fig.update_layout(
-        mapbox={
-            "style": "white-bg",
-            "layers": [
-                {
-                    "sourcetype": "raster",
-                    "source": ["https://xdworld.vworld.kr/2d/Base/202002/{z}/{x}/{y}.png"],
-                    "below": "traces"
-                }
-            ]
-        },
+         mapbox_style="carto-positron",
         margin={"l": 0, "r": 0, "t": 0, "b": 0},
         height=750,
         width=750
