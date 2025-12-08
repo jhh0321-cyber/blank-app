@@ -3,10 +3,10 @@ import pandas as pd
 import plotly.express as px
 
 # 기본 설정 & 제목
-st.set_page_config(page_title="2024년 화재 대시보드", layout="wide")
+st.set_page_config(page_title="2024년도 화재 대시보드", layout="wide")
 
 st.markdown(
-    "<h1 style='text-align:center;'> 2024년 화재 발생 현황 대시보드 🔥</h1>",
+    "<h1 style='text-align:center;'> 2024년도 화재 발생 현황 대시보드 🔥</h1>",
     unsafe_allow_html=True
 )
 st.write("")  # 여백
