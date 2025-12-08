@@ -6,7 +6,7 @@ import plotly.express as px
 st.set_page_config(page_title="2024년 화재 대시보드", layout="wide")
 
 st.markdown(
-    "<h1 style='text-align:center;'>🔥 2024년 화재 발생 현황 대시보드 🔥</h1>",
+    "<h1 style='text-align:center;'> 2024년 화재 발생 현황 대시보드 🔥</h1>",
     unsafe_allow_html=True
 )
 st.write("")  # 여백
@@ -158,7 +158,7 @@ with tab1:
     # 오른쪽 : 지표별 TOP 10 랭킹
 with col_right:
     st.markdown(
-        "<div style='margin-left:-70px;'>",  # 값은 -20 ~ -80 사이에서 조절해봐
+        "<div style='margin-left:-40px;'>",  # 값은 -20 ~ -80 사이에서 조절해봐
         unsafe_allow_html=True
     )
 
@@ -205,7 +205,7 @@ with col_right:
     )
 
     st.caption(
-        f"선택한 지표( {metric_label[metric_option]} ) 기준으로 시도별 상위 10개 지역을 정렬한 표입니다."
+        f"선택한 지표({metric_label[metric_option]}) 기준으로 시도별 상위 10개 지역을 정렬한 표입니다."
     )
 
 # =============================
