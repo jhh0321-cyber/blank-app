@@ -409,11 +409,11 @@ with tab3:
             fig_region.update_layout(
                 xaxis_side="top",
                 xaxis_tickangle=0,
-                margin=dict(l=0, r=0, t=90, b=10),
+                margin=dict(l=0, r=0, t=110, b=10),
                 title={
                     'y': 0.97,                         # 제목을 더 위로 올림
-                    'x': 0.5,                          # 가운데 정렬
-                    'xanchor': 'center',
+                    'x': 0.0,                          # 가운데 정렬
+                    'xanchor': 'left',
                     'yanchor': 'top'
                 }
             )
