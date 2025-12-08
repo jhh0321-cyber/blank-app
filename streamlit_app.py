@@ -107,9 +107,7 @@ tab1, tab2, tab3 = st.tabs([
     "🔥 화재 원인"
 ])
 
-# =============================
-# 1️⃣ 탭 1 : 시도별 지도 (지금까지 만든 거 그대로)
-# =============================
+# 1️⃣ 탭 1 : 시도별 지도 
 with tab1:
     col_map, col_right = st.columns([2, 1])
 
@@ -158,8 +156,12 @@ with tab1:
         st.plotly_chart(fig, use_container_width=False)
 
     # 오른쪽 : 지표별 TOP 10 랭킹
-# -----------------------------
 with col_right:
+    st.markdown(
+        "<div style='margin-left:-40px;'>",  # 값은 -20 ~ -80 사이에서 조절해봐
+        unsafe_allow_html=True
+    )
+
     st.subheader("지역별 TOP 10")
 
     # 지표 선택
