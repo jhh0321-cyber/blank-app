@@ -54,10 +54,29 @@ def load_data():
 
 df_sido = load_data()
 
-center_lat = 36.3
-center_lon = 127.8
+# 🔹 기본 중심(전체 보기일 때)
+default_center_lat = 36.3
+default_center_lon = 127.8
 
 red_scale = ["#ffb3b3", "#ff8080", "#ff4d4d", "#ff1a1a", "#e60000", "#b30000"]
+
+# 🔹 사이드바 필터
+st.sidebar.header("필터")
+sido_list = sorted(df_sido["시도"].unique().tolist())
+sido_options = ["전체"] + sido_list
+
+selected_sido = st.sidebar.selectbox("시도 선택", sido_options, index=0)
+
+# 선택에 따라 데이터 필터링
+if selected_sido == "전체":
+    plot_df = df_sido.copy()
+    center_lat = default_center_lat
+    center_lon = default_center_lon
+else:
+    plot_df = df_sido[df_sido["시도"] == selected_sido].copy()
+    # 선택된 시도 중심으로 지도 이동
+    center_lat = plot_df["lat"].iloc[0]
+    center_lon = plot_df["lon"].iloc[0]
 
 col_map, col_right = st.columns([2, 1])
 
@@ -65,7 +84,7 @@ with col_map:
     st.subheader("시도별 화재 발생 분포")
 
     fig = px.scatter_mapbox(
-        df_sido,
+        plot_df,   # ✅ 여기만 df_sido → plot_df로 변경
         lat="lat",
         lon="lon",
         size="화재건수",
@@ -77,7 +96,7 @@ with col_map:
             "화재건수": True,
             "인명피해(명)소계": True,
             "재산피해": True,
-            "lat": False,
+            "lat": False,  # ✅ 위도/경도는 hover에서 숨김
             "lon": False
         },
         zoom=6.4,
@@ -94,7 +113,7 @@ with col_map:
                     "sourcetype": "raster",
                     "source": ["https://xdworld.vworld.kr/2d/Base/202002/{z}/{x}/{y}.png"],
                     "below": "traces",
-                    "opacity": 0.6       
+                    "opacity": 0.6
                 }
             ]
         },
@@ -104,3 +123,10 @@ with col_map:
     )
 
     st.plotly_chart(fig, use_container_width=False)
+
+with col_right:
+    st.subheader("요약 통계")
+    st.metric("전체 화재 건수", f"{df_sido['화재건수'].sum():,}건")
+    st.metric("전체 인명 피해", f"{df_sido['인명피해(명)소계'].sum():,}명")
+    st.metric("전체 재산 피해", f"{df_sido['재산피해'].sum():,}원")
+
