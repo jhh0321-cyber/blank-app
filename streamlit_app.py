@@ -57,7 +57,7 @@ df_sido = load_data()
 center_lat = 36.3
 center_lon = 127.8
 
-# 꽤 진한 빨간 계열
+# 진한 빨간 계열
 red_scale = ["#ffb3b3", "#ff8080", "#ff4d4d", "#ff1a1a", "#e60000", "#b30000"]
 
 col_map, col_right = st.columns([2, 1])
@@ -86,17 +86,7 @@ with col_map:
     fig.update_traces(marker={"opacity": 0.9})
 
     fig.update_layout(
-        mapbox={
-            "style": "white-bg",
-            "layers": [
-                {
-                    "sourcetype": "raster",
-                    "source": ["https://xdworld.vworld.kr/2d/Base/202002/{z}/{x}/{y}.png"],
-                    "below": "traces",
-                    "opacity": 0.6       # ⭐ 배경(노란 도로 포함)을 꽤 옅게 보이게
-                }
-            ]
-        },
+        mapbox_style="carto-positron",  # 노란 도로 없는 밝은 지도 스타일
         margin={"l": 0, "r": 0, "t": 0, "b": 0},
         height=650,
         width=650
