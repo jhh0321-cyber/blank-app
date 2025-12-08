@@ -158,7 +158,7 @@ with tab1:
     # 오른쪽 : 지표별 TOP 10 랭킹
 with col_right:
     st.markdown(
-        "<div style='margin-left:-40px;'>",  # 값은 -20 ~ -80 사이에서 조절해봐
+        "<div style='margin-left:-70px;'>",  # 값은 -20 ~ -80 사이에서 조절해봐
         unsafe_allow_html=True
     )
 
