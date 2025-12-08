@@ -57,21 +57,20 @@ df_sido = load_data()
 center_lat = 36.3
 center_lon = 127.8
 
-# 밝은 톤이지만 너무 희지 않은 빨간 계열
 red_scale = ["#ffb3b3", "#ff8080", "#ff4d4d", "#ff1a1a", "#e60000", "#b30000"]
 
 col_map, col_right = st.columns([2, 1])
 
 with col_map:
-    st.subheader("시도별 화재 발생 분포 (동그라미)")
+    st.subheader("시도별 화재 발생 분포 (동그라미 크기 + 색상 = 화재건수)")
 
     fig = px.scatter_mapbox(
         df_sido,
         lat="lat",
         lon="lon",
-        size="화재건수",          # 동그라미 크기 = 화재건수
+        size="화재건수",
         size_max=45,
-        color="화재건수",         # 색도 화재건수 기준
+        color="화재건수",
         color_continuous_scale=red_scale,
         hover_name="시도",
         hover_data={
@@ -91,8 +90,8 @@ with col_map:
             "layers": [
                 {
                     "sourcetype": "raster",
-                    "source": ["https://xdworld.vworld.kr/2d/Base/202002/{z}/{x}/{y}.png"],
-                    "below": "traces"   # ⭐ 동그라미(트레이스)보다 아래에 지도 타일을 깐다
+                    "source": ["https://xdworld.vworld.kr/2d/gray/202002/{z}/{x}/{y}.png"],
+                    "below": "traces"
                 }
             ]
         },
@@ -106,8 +105,8 @@ with col_map:
 with col_right:
     st.subheader("지도 해석 가이드")
     st.write(
-        "- 한국어 지명이 표시된 Vworld 지도를 사용했습니다.\n"
-        "- 각 **동그라미의 크기와 색(진한 빨강)**이 해당 시도의 **화재건수**를 의미합니다.\n"
+        "- **노란 도로선 없는 한국어 지도(Vworld Gray)**를 사용했습니다.\n"
+        "- 동그라미의 **크기와 빨간색 농도**는 화재건수를 나타냅니다.\n"
         "- 동그라미가 **크고 진할수록** 화재가 많이 발생한 지역입니다.\n"
-        "- 동그라미 위에 마우스를 올리면 **화재건수, 인명피해(명)소계, 재산피해**를 확인할 수 있습니다."
+        "- 마우스를 올리면 **화재건수 / 인명피해 / 재산피해**를 확인할 수 있습니다."
     )
