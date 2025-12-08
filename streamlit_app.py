@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 st.set_page_config(page_title="2024년 화재 대시보드", layout="wide")
-st.title("2024년 시도별 화재 발생 현황")
+st.title("2024년도 화재 발생 현황")
 
 @st.cache_data
 def load_data():
@@ -54,13 +54,13 @@ def load_data():
 
 df_sido = load_data()
 
-# 🔹 기본 중심(전체 보기일 때)
+# 기본 중심(전체 보기)
 default_center_lat = 36.3
 default_center_lon = 127.8
 
 red_scale = ["#ffb3b3", "#ff8080", "#ff4d4d", "#ff1a1a", "#e60000", "#b30000"]
 
-# 🔹 사이드바 필터
+#사이드바 필터
 st.sidebar.header("필터")
 sido_list = sorted(df_sido["시도"].unique().tolist())
 sido_options = ["전체"] + sido_list
@@ -84,7 +84,7 @@ with col_map:
     st.subheader("시도별 화재 발생 분포")
 
     fig = px.scatter_mapbox(
-        plot_df,   # ✅ 여기만 df_sido → plot_df로 변경
+        plot_df,  
         lat="lat",
         lon="lon",
         size="화재건수",
@@ -96,7 +96,7 @@ with col_map:
             "화재건수": True,
             "인명피해(명)소계": True,
             "재산피해": True,
-            "lat": False,  # ✅ 위도/경도는 hover에서 숨김
+            "lat": False,  
             "lon": False
         },
         zoom=6.4,
@@ -118,8 +118,8 @@ with col_map:
             ]
         },
         margin={"l": 0, "r": 0, "t": 0, "b": 0},
-        height=750,
-        width=750
+        height=650,
+        width=650
     )
 
     st.plotly_chart(fig, use_container_width=False)
