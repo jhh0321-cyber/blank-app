@@ -254,7 +254,7 @@ with tab2:
             st.plotly_chart(fig_month, use_container_width=True)
 
             st.caption(
-                "월별 화재 건수 변화를 통해 계절별·시기별 위험도의 변화를 확인할 수 있습니다."
+                "3월과 12월에 화재 발생이 특히 높아 계절적 요인이 큰 영향을 미치는 것으로 보인다."
             )
 
     # ⏰ 시간대별 분포
@@ -295,7 +295,8 @@ with tab2:
             st.plotly_chart(fig_hour, use_container_width=True)
 
             st.caption(
-                "하루 중 어느 시간대에 화재가 집중되는지 확인할 수 있습니다."
+                "13~15시 사이에 화재 발생량이 두드러진다.
+                새벽 시간대는 상대적으로 낮아 시간대에 따라 뚜렷한 차이가 나타난다."
             )
 
 # 탭 3 : 화재 원인 분석
